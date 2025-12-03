@@ -1,5 +1,5 @@
 using System;
-
+using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
 using System.Text.Json.Serialization;
 using System.Windows.Forms;
@@ -67,9 +67,9 @@ knop.Size = new Size(50, 20);
 voorbeeld1.Size =new Size(80, 20);
 
 xmiddenL.Text = "midden x:";
-ymiddenL.Text = "midden y";
+ymiddenL.Text = "midden y:";
 schalingL.Text = "schaal:";
-aantalL.Text = "aantal";
+aantalL.Text = "aantal:";
 
 knop.Text = "Go!";
 voorbeeld1.Text = "Voorbeeld1";
@@ -92,6 +92,7 @@ int n = 100; // parameter voor max aantal
 int rv = 0;
 int gv = 100;
 int bv = 175;
+int kleurenschema = 0;
 
 
 
@@ -135,7 +136,10 @@ int mandelbrotgetal(double x, double y)
 
 void Bitmapmaken()
 {
-
+    int r = 0;
+    int g = 0;
+    int b = 0;
+    int kl = 0;
     for (int x = -200; x < 200; x++)
     {
         for (int y = -200; y < 200; y++)
@@ -147,13 +151,32 @@ void Bitmapmaken()
 
             int i = mandelbrotgetal(xmandel, ymandel);
 
-          
+            if (kleurenschema == 0)
+            {
+                kl = i % 2;
+                int j = 1;
+                if (kl == j)
 
-                int kl = i % 256;
+                {
+                    r = 255;
+                    g = 255;
+                    b = 255;
+                }
+                else
+                {
+                    r = 0;
+                    g = 0;
+                    b = 0;
+                }
+            }
+            else
+            { 
+                kl = i % 256;
 
-            int r = (kl + rv) % 256;
-            int g = (kl + gv) % 256;
-            int b = (kl + bv) % 256;
+            r = (kl + rv) % 256;
+            g = (kl + gv) % 256;
+            b = (kl + bv) % 256;
+            }
 
 
 
@@ -174,7 +197,7 @@ void knopklik(object sender2, EventArgs ea)
     vy = double.Parse(ymiddenT.Text);
 
     n = int.Parse(aantalT.Text);
-
+    
 
 
     Bitmapmaken();
@@ -188,6 +211,7 @@ void vb1(object a, EventArgs mea)
     vy = 0.9014428; // parameter voor midden y
     schaal = 3.8147E-8;  // parameter voor schaal
     n = 400; // parameter voor max aantal
+    kleurenschema = 1;
     string schaalinv = schaal.ToString();
     schalingT.Text = schaalinv;
     string xmiddenTinv = vx.ToString();
