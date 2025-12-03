@@ -62,11 +62,17 @@ knop.Text = "Go!";
 //parameters
 // definieert paratemeters voor de afbeedling
 
+
 double vx = -0.108625; // parameter voor midden x
 double vy = 0.9014428; // parameter voor midden y
 double schaal = 3.8147E-8; // parameter voor schaal
 int n = 400; // parameter voor max aantal
-int kl = 255; // parameter voor kleur ; nu alleen zwart/grijstinten; dit moet nog aangepast naar kleurschema
+int rv = 0;
+int gv = 100;
+int bv = 175;
+
+
+
 //parameters invullen in invoer (moet nog afgemaakt)
 string schaalinv = schaal.ToString();
 schalingT.Text = schaalinv;
@@ -82,8 +88,9 @@ afbeelding.Location = new Point(20, 180);
 afbeelding.Size = new Size(400, 400);
 afbeelding.BackColor = Color.Black;
 afbeelding.Image = plaatje;
-
+Point hier = new Point(0, 0);
 scherm.Controls.Add(afbeelding);
+
 int mandelbrotgetal(double x, double y)
 //functie die mandelbrotgetal berekent van een punt (x,y) 
 {
@@ -104,58 +111,72 @@ int mandelbrotgetal(double x, double y)
     }
     return i;
 }
-int kleur(double x, double y)
+
+
 
 // functie die een kleur toekent aan ieder punt in de weer te geven figuur op basis van mandelbrotgetal en rekening houdend met de parameters voor midden x, midden y, schaal en kleur (nu zwart, kleur nog doen)
-{
-    int i = mandelbrotgetal(x * schaal + vx, -y * schaal + vy); // houdt rekening met verschuiving middden en de schaal
-    int n = i / 2;
-    int h = 2 * n;
-    if (h == i)
-        return 0;
-    else return kl;
+  
+
     // even mandelbroodgettaalen worden nu zwart (of grijstint als kl < 255)
     // dit moet aangepast nog; rood, groen en blauw component moeten alle drie van mandelbrotgetal afhangen 
-}
+
+
+
 void teken(object sender, PaintEventArgs pea)
 // functie die de weer te geven bitmap (opnieuw) tekent
 {
-
+    
 
     for (int x = -200; x < 200; x++)
     {
         for (int y = -200; y < 200; y++)
         {
-            int c = kleur(x, y);
-            Color pixel = Color.FromArgb(c, c, c);
+            
+
+            int i = mandelbrotgetal(x * schaal + vx, -y * schaal + vy); // houdt rekening met verschuiving middden en de schaal
+            int kl = i % 256;
+
+            int r = (kl + rv) % 256;    
+            int g = (kl + gv) % 256;
+            int b = (kl + bv) % 256;
+
+
+
+            Color pixel = Color.FromArgb(r,g, b);
             plaatje.SetPixel(x + 200, y + 200, pixel);
         }
     }
 }
 
-void bereken(object sender2, EventArgs ea)
+void knopklik(object sender2, EventArgs ea)
 { 
     schaal = double.Parse(schalingT.Text);
     vx = double.Parse(xmiddenT.Text);
     vy = double.Parse(ymiddenT.Text);
 
     n = int.Parse(aantalT.Text);
-    teken(null,null);
+    //teken(null,null);
     afbeelding.Invalidate();
 
     // Dit is poging schaal op te halen uit tekstinvoer maar lijkt niet goed te werken
 }
-void muisklik(object a, EventArgs ea)
+void muisklik(object a, MouseEventArgs ea)
 {
-    schaal = schaal * 0.5; 
+    
+    hier = ea.Location;
+    vy = hier.Y*schaal;
+    afbeelding.Invalidate();
 }
 
 
 
 
-scherm.Paint += teken;
-knop.Click += bereken;
 
+knop.Click += knopklik;
 
+afbeelding.MouseClick += muisklik;
+
+//scherm.MouseClick += muisklik;
+afbeelding.Paint += teken;
 
 Application.Run(scherm);
