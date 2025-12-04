@@ -1,0 +1,529 @@
+
+using System;
+using System.Diagnostics.Eventing.Reader;
+using System.Drawing;
+using System.Text.Json.Serialization;
+using System.Windows.Forms;
+
+// basisinstellingen voor de client + aanmaken bitmap
+Form scherm = new Form();
+scherm.Text = "MandelBrot Figuur";
+scherm.BackColor = Color.LightGray;
+scherm.ClientSize = new Size(440, 620);
+Bitmap plaatje = new Bitmap(400, 400);
+
+// aanmaken van alle labels de naam van de Labels is eerst de variabele waarvoor het label eropstaat en dan de L van label. De rv gv en lv staan voor de verschuivingen van de RGB kleuren t.o.v het mandelbrotgetal.
+Label xmiddenL = new Label();
+Label schalingL = new Label();
+Label ymiddenL = new Label();
+Label aantalL = new Label();
+Label rvL = new Label();
+Label gvL = new Label();
+Label bvL = new Label();
+Label afbeelding = new Label();
+
+// het aanmaken van alle textboxes weer eerst de naam van de variabele en daarna de T van tekstbox
+TextBox xmiddenT = new TextBox();
+TextBox schalingT = new TextBox();
+TextBox ymiddenT = new TextBox();
+TextBox aantalT = new TextBox();
+TextBox rvT = new TextBox();
+TextBox gvT = new TextBox();
+TextBox bvT = new TextBox();
+
+// hier maken we alle knoppen aan
+Button kleurenmodus = new Button();
+Button knop = new Button();
+Button reset = new Button();
+Button voorbeeld1 = new Button();
+Button voorbeeld2 = new Button();
+Button voorbeeld3 = new Button();
+Button voorbeeld4 = new Button();
+
+// hier voegen we de controls toe aan het scherm (eerst labels, dan textboxes, dan knoppen)
+scherm.Controls.Add(xmiddenL);
+scherm.Controls.Add(ymiddenL);
+scherm.Controls.Add(schalingL);
+scherm.Controls.Add(aantalL);
+scherm.Controls.Add(rvL);
+scherm.Controls.Add(gvL);
+scherm.Controls.Add(bvL);
+scherm.Controls.Add(afbeelding);
+
+scherm.Controls.Add(xmiddenT);
+scherm.Controls.Add(ymiddenT);
+scherm.Controls.Add(schalingT);
+scherm.Controls.Add(aantalT);
+scherm.Controls.Add(rvT);
+scherm.Controls.Add(gvT);
+scherm.Controls.Add(bvT);
+
+scherm.Controls.Add(knop);
+scherm.Controls.Add(voorbeeld1);
+scherm.Controls.Add(voorbeeld2);
+scherm.Controls.Add(voorbeeld3);
+scherm.Controls.Add(voorbeeld4);
+scherm.Controls.Add(reset);
+scherm.Controls.Add(kleurenmodus);
+
+// hier stellen we de locatie in van alle labels
+xmiddenL.Location = new Point(10, 20);
+ymiddenL.Location = new Point(10, 50);
+schalingL.Location = new Point(10, 85);
+aantalL.Location = new Point(10, 110);
+
+rvL.Location = new Point(220, 20);
+gvL.Location = new Point(220, 50);
+bvL.Location = new Point(220, 80);
+
+afbeelding.Location = new Point(20, 180);
+
+// hier stellen we de locatie in van alle textboxes
+xmiddenT.Location = new Point(80, 20);
+ymiddenT.Location = new Point(80, 50);
+schalingT.Location = new Point(80, 85);
+aantalT.Location = new Point(80, 110);
+
+rvT.Location = new Point(280, 20);
+gvT.Location = new Point(280, 50);
+bvT.Location = new Point(280, 80);
+
+// hier stellen we de locatie in van alle knoppen
+knop.Location = new Point(200, 150);
+voorbeeld1.Location = new Point(350, 20);
+voorbeeld2.Location = new Point(350, 50);
+voorbeeld3.Location = new Point(350, 80);
+voorbeeld4.Location = new Point(350, 110);
+reset.Location = new Point(370, 150);
+kleurenmodus.Location = new Point(300, 150);
+
+// hier stellen we de grootte van de labels en de afbeelding in
+xmiddenL.Size = new Size(60, 20);
+ymiddenL.Size = new Size(60, 20);
+schalingL.Size = new Size(60, 20);
+aantalL.Size = new Size(60, 20);
+
+rvL.Size = new Size(40, 20);
+gvL.Size = new Size(40, 20);
+bvL.Size = new Size(40, 20);
+
+afbeelding.Size = new Size(400, 400);
+
+// grootte van textboxes
+xmiddenT.Size = new Size(125, 20);
+ymiddenT.Size = new Size(125, 20);
+schalingT.Size = new Size(125, 20);
+aantalT.Size = new Size(60, 20);
+
+rvT.Size = new Size(40, 20);
+gvT.Size = new Size(40, 20);
+bvT.Size = new Size(40, 20);
+
+// grootte van knoppen
+knop.Size = new Size(50, 20);
+voorbeeld1.Size = new Size(80, 20);
+voorbeeld2.Size = new Size(80, 20);
+voorbeeld3.Size = new Size(80, 20);
+voorbeeld4.Size = new Size(80, 20);
+reset.Size = new Size(40, 20);
+kleurenmodus.Size = new Size(40, 20);
+
+// tekst van labels
+xmiddenL.Text = "midden x:";
+ymiddenL.Text = "midden y:";
+schalingL.Text = "schaal:";
+aantalL.Text = "Max aantal:";
+rvL.Text = "rood";
+gvL.Text = "groen";
+bvL.Text = "blauw";
+
+// tekst van knoppen
+knop.Text = "Go!";
+voorbeeld1.Text = "Voorbeeld1";
+voorbeeld2.Text = "Voorbeeld2";
+voorbeeld3.Text = "voorbeeld3";
+voorbeeld4.Text = "voorbeeld4";
+reset.Text = "reset";
+kleurenmodus.Text = "kleurverschuivingen";
+
+// uiterlijk van het label waar de bitmap wordt getekend
+afbeelding.BackColor = Color.Black;
+afbeelding.Image = plaatje;
+
+// variabelen voor de Mandelbrot-berekening
+double vx = 0;        // midden x
+double vy = 0;        // midden y
+double schaal = 0.01; // zoomfactor
+int n = 100;          // maximaal aantal berekeningen per pixel let op dat deze waarde hoger moet worden als je verder inzoomt en ook beter hoger kan zijn als je de kleuren goed wilt zien.
+
+// variabelen voor kleuren
+int rv = 0;         // roodverschuiving
+int gv = 0;         // groenverschuiving
+int bv = 0;           // blauwverschuiving
+int kleurenschema = 0; // 0 = zwart/wit, 1 = kleurenschema geeft dus aan of de kleurstand aan of uit moet staan. 
+
+// hier zetten we de variabelen om naar tekst zodat ze in de textboxes worden getoond
+
+string xmiddenTinv = vx.ToString();
+xmiddenT.Text = xmiddenTinv;
+
+string ymiddenTinv = vy.ToString();
+ymiddenT.Text = ymiddenTinv;
+
+string schaalinv = schaal.ToString();
+schalingT.Text = schaalinv;
+
+string aantalTinv = n.ToString();
+aantalT.Text = aantalTinv;
+
+string roodv = rv.ToString();
+rvT.Text = roodv;
+string groenv = gv.ToString();
+gvT.Text = groenv;
+string blauwv = bv.ToString();
+bvT.Text = blauwv;
+
+// beginpunt voor muisklikpositie
+Point hier = new Point(0, 0);
+
+// functie die het Mandelbrotgetal van elke pixel berekent
+int mandelbrotgetal(double x, double y)
+{//De variabelen alfa en beta staan voor de nieuwe waarden van a en b. c heet zo wegens de formule a^2 +b^2 = c^2.
+    double a = 0;
+    double b = 0;
+    double c = 0;
+    int i = 0;
+
+    // formule wordt herhaald totdat het punt een grotere afstand dan 2 tot 0 punt heeft  of het maximum aantal berekeningen n is bereikt
+    for (c = 0; c < 2 && i < n;)
+    {
+        double alfa = (a * a) - (b * b) + x;
+        double beta = (2 * a * b) + y;
+        a = alfa;
+        b = beta;
+        i = i + 1;
+
+        c = Math.Sqrt((Math.Pow(a, 2) + Math.Pow(b, 2)));
+    }
+    return i; // aantal keren dat de berekening is uitgevoerd en dus het mandelbrotgetal.
+}
+
+// functie die de hele bitmap opnieuw opbouwt door pixels te zetten op elk punt van de bitmap op basis van het mandelbrotgetal dat aan die pixel moet worden toegewezen.
+void Bitmapmaken()
+{
+    int r = 0;
+    int g = 0;
+    int b = 0;
+    int kl = 0;
+
+    // loopt door alle pixels heen (van -200 tot 200 zodat het middenpunt op (0,0) ligt)
+    for (int x = -200; x < 200; x++)
+    {
+        for (int y = -200; y < 200; y++)
+        {
+            // zet x en y waarden van pixelcoördinaten naar de waarden waarmee de Mandelbrot-berekeningen moeten worden uitgevoerd.
+            double xmandel = x * schaal + vx;
+            double ymandel = -y * schaal + vy;
+
+            int i = mandelbrotgetal(xmandel, ymandel);
+
+
+
+
+
+            if (kleurenschema == 0) // Berekeningen bij zwart/wit schema:
+            {
+                if (i == n) //zorgt ervoor dat als i net zo groot is als het max aantal berekeningen de pixel zwart wordt. 
+                {
+                    r = 0;
+                    g = 0;
+                    b = 0;
+                }
+
+                 //zorgt er voor even mandelbrotgetallen dat het zwart wordt, oneven zorgt er voor dat het  wit wordt
+
+                else
+                { 
+                    kl = i % 2;
+                int j = 1;
+                if (kl == j)
+                {
+                    r = 255;
+                    g = 255;
+                    b = 255;
+                }
+                else
+                {
+                    r = 0;
+                    g = 0;
+                    b = 0;
+                }
+            }
+            }
+            else
+            {
+                // hier wordt de kleur berekend door (i % 256) te gebruiken en de rgb waarden te verschuiven
+                kl = i % 256;
+                r = (kl + rv) % 256;
+                g = (kl + gv) % 256;
+                b = (kl + bv) % 256;
+            }
+            
+            Color pixel = Color.FromArgb(r, g, b);
+            plaatje.SetPixel(x + 200, y + 200, pixel);
+        }
+    }
+}
+
+// eventhandler voor de Go! knop waarin de ingevoerde tekst wordt omgezet tot variabelen die de computer begrijpt en de bitmap en tekenfunctie opnieuw worden aangeroepen.(dit laatste doet elke andere knop natuurlijk ook)
+void knopklik(object sender2, EventArgs ea)
+{
+    schaal = double.Parse(schalingT.Text);
+    vx = double.Parse(xmiddenT.Text);
+    vy = double.Parse(ymiddenT.Text);
+    n = int.Parse(aantalT.Text);
+    rv = int.Parse(rvT.Text);
+    gv = int.Parse(gvT.Text);
+    bv = int.Parse(bvT.Text);
+
+    Bitmapmaken();
+    afbeelding.Invalidate();
+}
+
+// voorbeeld 1 (voorbeeldpunt dat een mooi gebied laat zien)
+void vb1(object a, EventArgs mea)
+{
+    vx = -0.108625;
+    vy = 0.9014428;
+    schaal = 3.8147E-8;
+    n = 400;
+    rv = 0;
+    gv = 100;
+    bv = 175;
+    kleurenschema = 1;
+
+    // zorgt ervoor dat de waarden van het punt worden getoond in de textboxes
+    string schaalinv = schaal.ToString();
+    schalingT.Text = schaalinv;
+
+    string xmiddenTinv = vx.ToString();
+    xmiddenT.Text = xmiddenTinv;
+
+    string ymiddenTinv = vy.ToString();
+    ymiddenT.Text = ymiddenTinv;
+
+    string aantalTinv = n.ToString();
+    aantalT.Text = aantalTinv;
+    
+    string roodv = rv.ToString();
+    rvT.Text = roodv;
+    
+    string groenv = gv.ToString();
+    gvT.Text = groenv;
+    
+    string blauwv = bv.ToString();
+    bvT.Text = blauwv;
+
+    Bitmapmaken();
+    afbeelding.Invalidate();
+}
+
+// voorbeeld 2
+void vb2(object a, EventArgs mea)
+{
+    vx = -1.6748947656250004;
+    vy = 4.999999999999647E-07;
+    schaal = 7.031250000000002E-09;
+    n = 400;
+    rv = 90;
+    gv = 231;
+    bv = 171;
+    kleurenschema = 1;
+
+    string schaalinv = schaal.ToString();
+    schalingT.Text = schaalinv;
+    string xmiddenTinv = vx.ToString();
+    xmiddenT.Text = xmiddenTinv;
+    string ymiddenTinv = vy.ToString();
+    ymiddenT.Text = ymiddenTinv;
+    string aantalTinv = n.ToString();
+    aantalT.Text = aantalTinv;
+    string roodv = rv.ToString();
+    rvT.Text = roodv;
+    string groenv = gv.ToString();
+    gvT.Text = groenv;
+    string blauwv = bv.ToString();
+    bvT.Text = blauwv;
+
+    Bitmapmaken();
+    afbeelding.Invalidate();
+}
+
+// voorbeeld 3
+void vb3(object a, EventArgs mea)
+{
+    vx = -0.36980062499999994;
+    vy = 0.6498500000000001;
+    schaal = 9.375000000000002E-08;
+    n = 400;
+    rv = 67;
+    gv = 67;
+    bv = 67;
+    kleurenschema = 1;
+
+    string schaalinv = schaal.ToString();
+    schalingT.Text = schaalinv;
+    string xmiddenTinv = vx.ToString();
+    xmiddenT.Text = xmiddenTinv;
+    string ymiddenTinv = vy.ToString();
+    ymiddenT.Text = ymiddenTinv;
+    string aantalTinv = n.ToString();
+    aantalT.Text = aantalTinv;
+    string roodv = rv.ToString();
+    rvT.Text = roodv;
+    string groenv = gv.ToString();
+    gvT.Text = groenv;
+    string blauwv = bv.ToString();
+    bvT.Text = blauwv;
+
+    Bitmapmaken();
+    afbeelding.Invalidate();
+}
+
+// voorbeeld 4
+void vb4(object a, EventArgs mea)
+{
+    vx = 0.1521031778538257;
+    vy = 0.6415999930942949;
+    schaal = 1.80406723637134E-16;
+    n = 500;
+    rv = 153;
+    gv = 73;
+    bv = 239;
+    kleurenschema = 1;
+
+    string schaalinv = schaal.ToString();
+    schalingT.Text = schaalinv;
+    string xmiddenTinv = vx.ToString();
+    xmiddenT.Text = xmiddenTinv;
+    string ymiddenTinv = vy.ToString();
+    ymiddenT.Text = ymiddenTinv;
+    string aantalTinv = n.ToString();
+    aantalT.Text = aantalTinv;
+    string roodv = rv.ToString();
+    rvT.Text = roodv;
+    string groenv = gv.ToString();
+    gvT.Text = groenv;
+    string blauwv = bv.ToString();
+    bvT.Text = blauwv;
+
+    Bitmapmaken();
+    afbeelding.Invalidate();
+}
+
+// resetknop: alle waarden worden weer omgezet naar de standaardwaarden
+void resetter(object sender, EventArgs mea)
+{
+    vx = 0;
+    vy = 0;
+    schaal = 0.01;
+    n = 100;
+    rv = 0;
+    gv = 0;
+    bv = 0;
+    kleurenschema = 0;
+
+    string xmiddenTinv = vx.ToString();
+    xmiddenT.Text = xmiddenTinv;
+
+    string ymiddenTinv = vy.ToString();
+    ymiddenT.Text = ymiddenTinv;
+
+    string schaalinv = schaal.ToString();
+    schalingT.Text = schaalinv;
+    
+    string aantalTinv = n.ToString();
+    aantalT.Text = aantalTinv;
+
+
+    string roodv = rv.ToString();
+    rvT.Text = roodv;
+    string groenv = gv.ToString();
+    gvT.Text = groenv;
+    string blauwv = bv.ToString();
+    bvT.Text = blauwv;
+
+    Bitmapmaken();
+    afbeelding.Invalidate();
+}
+
+// kleurmodusknop: wisselt tussen zwart/wit en kleur door de variabele kleurenschema waar of onwaar te maken afhankelijk van wat deze eerst was.
+void kleurveranderen(object sender, EventArgs mea)
+{
+    if (kleurenschema == 0)
+    {
+        kleurenschema = 1;
+    }
+    else if (kleurenschema == 1)
+    {
+        kleurenschema = 0;
+    }
+
+    Bitmapmaken();
+    afbeelding.Invalidate();
+}
+
+// muisklik op de afbeelding zodat je kunt inzoomen en uitzoomen
+void muisklik(object a, MouseEventArgs mea)
+{
+    // klikpositie opslaan
+    hier = mea.Location;
+
+    // nieuwe middenwaarden berekenen op basis van klikpositie en deze ook in de tekstbox neerzetten
+    vy = vy + -1 * (hier.Y - 200) * schaal;
+    string ymiddenTinv = vy.ToString();
+    ymiddenT.Text = ymiddenTinv;
+
+    vx = vx + (hier.X - 200) * schaal;
+    string xmiddenTinv = vx.ToString();
+    xmiddenT.Text = xmiddenTinv;
+
+    // voor linkermuisknop inzoomen
+    if (mea.Button == MouseButtons.Left)
+    {
+        schaal = schaal * 0.5;
+        string schaalinv = schaal.ToString();
+        schalingT.Text = schaalinv;
+    }
+
+    //  voor rechtermuisknop uitzoomen
+    if (mea.Button == MouseButtons.Right)
+    {
+        schaal = schaal * 2;
+        string schaalinv = schaal.ToString();
+        schalingT.Text = schaalinv;
+    }
+
+    Bitmapmaken();
+    afbeelding.Invalidate();
+}
+
+// tekenfunctie wordt aangeroepen om plaatje met alle pixels te tekenen op het label op de bitmap. 
+void teken(object sender, PaintEventArgs pea)
+{
+    pea.Graphics.DrawImage(plaatje, 0, 0);
+}
+
+// events koppelen aan de eventhandlers en het programma starten
+afbeelding.Paint += teken;
+Bitmapmaken();
+afbeelding.MouseClick += muisklik;
+knop.Click += knopklik;
+reset.Click += resetter;
+voorbeeld1.Click += vb1;
+voorbeeld2.Click += vb2;
+voorbeeld3.Click += vb3;
+voorbeeld4.Click += vb4;
+kleurenmodus.Click += kleurveranderen;
+
+Application.Run(scherm);
