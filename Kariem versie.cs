@@ -1,0 +1,493 @@
+
+using System;
+using System.Diagnostics.Eventing.Reader;
+using System.Drawing;
+using System.Text.Json.Serialization;
+using System.Windows.Forms;
+
+
+
+Form scherm = new Form();
+scherm.Text = "MandelBrot Figuur";
+scherm.BackColor = Color.LightGray;
+scherm.ClientSize = new Size(440, 620);
+Bitmap plaatje = new Bitmap(400, 400);
+Label xmiddenL = new Label();
+TextBox xmiddenT = new TextBox();
+Label schalingL = new Label();
+TextBox schalingT = new TextBox();
+TextBox ymiddenT = new TextBox();
+Label ymiddenL = new Label();
+TextBox aantalT = new TextBox();
+Label aantalL = new Label();
+Label afbeelding = new Label();
+
+Label rvL = new Label();
+Label gvL = new Label();
+Label bvL = new Label();
+TextBox rvT = new TextBox();
+TextBox gvT = new TextBox();
+TextBox bvT = new TextBox();
+
+
+Button kleurenmodus = new Button();
+Button knop = new Button();
+Button voorbeeld1 = new Button();
+Button voorbeeld2 = new Button();
+Button reset = new Button();
+Button voorbeeld3 = new Button();
+Button voorbeeld4 = new Button();
+
+
+scherm.Controls.Add(xmiddenL);
+scherm.Controls.Add(xmiddenT);
+scherm.Controls.Add(schalingL);
+scherm.Controls.Add(schalingT);
+scherm.Controls.Add(ymiddenL);
+scherm.Controls.Add(ymiddenT);
+scherm.Controls.Add(aantalT);
+scherm.Controls.Add(aantalL);
+scherm.Controls.Add(afbeelding);
+
+scherm.Controls.Add(rvL);
+scherm.Controls.Add(gvL);
+scherm.Controls.Add(bvL);
+scherm.Controls.Add(rvT);
+scherm.Controls.Add(gvT);
+scherm.Controls.Add(bvT);
+
+scherm.Controls.Add(knop);
+scherm.Controls.Add(voorbeeld1);
+scherm.Controls.Add(voorbeeld2);
+scherm.Controls.Add(voorbeeld3);
+scherm.Controls.Add(voorbeeld4);
+
+
+scherm.Controls.Add(reset);
+scherm.Controls.Add(kleurenmodus);
+
+
+
+afbeelding.Location = new Point(20, 180);
+
+xmiddenL.Location = new Point(10, 20);
+ymiddenL.Location = new Point(10, 50);
+schalingL.Location = new Point(10, 85);
+aantalL.Location = new Point(10, 110);
+
+xmiddenT.Location = new Point(80, 20);
+ymiddenT.Location = new Point(80, 50);
+schalingT.Location = new Point(80, 85);
+aantalT.Location = new Point(80, 110);
+
+rvL.Location = new Point(220, 20);
+gvL.Location = new Point(220, 50);
+bvL.Location = new Point(220, 80);
+
+rvT.Location = new Point(280, 20);
+gvT.Location = new Point(280, 50);
+bvT.Location = new Point(280, 80);
+
+
+
+
+
+knop.Location = new Point(200, 150);
+voorbeeld1.Location = new Point(350, 20);
+voorbeeld2.Location = new Point(350, 50);
+voorbeeld3.Location = new Point(350, 80);
+voorbeeld4.Location = new Point(350, 110);
+
+
+reset.Location = new Point(370, 150);
+kleurenmodus.Location = new Point(300, 150);
+
+afbeelding.Size = new Size(400, 400);
+xmiddenL.Size = new Size(60, 20);
+ymiddenL.Size = new Size(60, 20);
+schalingL.Size = new Size(60, 20);
+aantalL.Size = new Size(100, 20);
+
+xmiddenT.Size = new Size(125, 20);
+ymiddenT.Size = new Size(125, 20);
+schalingT.Size = new Size(125, 20);
+aantalT.Size = new Size(60, 20);
+
+rvL.Size = new Size(40, 20);
+gvL.Size = new Size(40, 20);
+bvL.Size = new Size(40, 20);
+
+rvT.Size = new Size(40, 20);
+gvT.Size = new Size(40, 20);
+bvT.Size = new Size(40, 20);
+
+knop.Size = new Size(50, 20);
+voorbeeld1.Size = new Size(80, 20);
+voorbeeld2.Size = new Size(80, 20);
+voorbeeld3.Size = new Size(80, 20);
+voorbeeld4.Size = new Size(80, 20);
+reset.Size = new Size(40, 20);
+kleurenmodus.Size = new Size(40, 20);
+
+xmiddenL.Text = "midden x:";
+ymiddenL.Text = "midden y:";
+schalingL.Text = "schaal:";
+aantalL.Text = "Max aantal:";
+rvL.Text = "rood";
+gvL.Text = "groen";
+bvL.Text = "blauw";
+
+knop.Text = "Go!";
+voorbeeld1.Text = "Voorbeeld1";
+voorbeeld2.Text = "Voorbeeld2";
+voorbeeld3.Text = "voorbeeld3";
+voorbeeld4.Text = "voorbeeld4";
+reset.Text = "reset";
+kleurenmodus.Text = "kleurverschuivingen";
+
+afbeelding.BackColor = Color.Black;
+afbeelding.Image = plaatje;
+
+//parameters
+// definieert parameters voor de afbeedling
+
+// parameters voor basisplaatje
+double vx = 0; // parameter voor midden x
+double vy = 0; // parameter voor midden y
+double schaal = 0.01; // parameter voor schaal
+int n = 100; // parameter voor max aantal
+
+// parameters voor kleuren
+int rv = 200;
+int gv = 100;
+int bv = 1;
+int kleurenschema = 0;
+
+
+
+//parameters invullen in invoer (moet nog afgemaakt)
+string schaalinv = schaal.ToString();
+schalingT.Text = schaalinv;
+string xmiddenTinv = vx.ToString();
+xmiddenT.Text = xmiddenTinv;
+string ymiddenTinv = vy.ToString();
+ymiddenT.Text = ymiddenTinv;
+string aantalTinv = n.ToString();
+aantalT.Text = aantalTinv;
+
+string roodv = rv.ToString();
+rvT.Text = roodv;
+string groenv = gv.ToString();
+gvT.Text = groenv;
+string blauwv = bv.ToString();
+bvT.Text = blauwv;
+
+
+Point hier = new Point(0, 0);
+
+
+int mandelbrotgetal(double x, double y)
+//functie die mandelbrotgetal berekent van een punt (x,y) 
+{
+    double a = 0;
+    double b = 0;
+    double pita = 0;
+    int i = 0;
+    for (pita = 0; pita < 2 && i < n;)
+    {
+        double alfa = (a * a) - (b * b) + x;
+        double beta = (2 * a * b) + y;
+        a = alfa;
+        b = beta;
+        i = i + 1;
+        pita = Math.Sqrt((Math.Pow(a, 2) + Math.Pow(b, 2)));
+
+
+    }
+    return i;
+}
+
+
+
+
+
+void Bitmapmaken()
+{
+    int r = 0;
+    int g = 0;
+    int b = 0;
+    int kl = 0;
+    for (int x = -200; x < 200; x++)
+    {
+        for (int y = -200; y < 200; y++)
+        {
+            double xmandel = x * schaal + vx;// houdt rekening met verschuiving middden en de schaal
+
+
+            double ymandel = -y * schaal + vy;
+
+            int i = mandelbrotgetal(xmandel, ymandel);
+
+            if (kleurenschema == 0)
+            {
+                kl = i % 2;
+                int j = 1;
+                if (kl == j)
+
+                {
+                    r = 255;
+                    g = 255;
+                    b = 255;
+                }
+                else
+                {
+                    r = 0;
+                    g = 0;
+                    b = 0;
+                }
+            }
+            else
+            {
+                kl = i % 256;
+
+                r = (kl + rv) % 256;
+                g = (kl + gv) % 256;
+                b = (kl + bv) % 256;
+            }
+
+
+
+            Color pixel = Color.FromArgb(r, g, b);
+            plaatje.SetPixel(x + 200, y + 200, pixel);
+        }
+    }
+
+}
+
+
+
+void knopklik(object sender2, EventArgs ea)
+{
+
+    schaal = double.Parse(schalingT.Text);
+    vx = double.Parse(xmiddenT.Text);
+    vy = double.Parse(ymiddenT.Text);
+
+    n = int.Parse(aantalT.Text);
+    rv = int.Parse(rvT.Text);
+    gv = int.Parse(gvT.Text);
+    bv = int.Parse(bvT.Text);
+
+
+
+    Bitmapmaken();
+    afbeelding.Invalidate();
+
+
+}
+void vb1(object a, EventArgs mea)
+{
+    vx = -0.108625; // parameter voor midden x
+    vy = 0.9014428; // parameter voor midden y
+    schaal = 3.8147E-8;  // parameter voor schaal
+    n = 400; // parameter voor max aantal
+    rv = 0;
+    gv = 100;
+    bv = 175;
+    kleurenschema = 1;
+    string schaalinv = schaal.ToString();
+    schalingT.Text = schaalinv;
+    string xmiddenTinv = vx.ToString();
+    xmiddenT.Text = xmiddenTinv;
+    string ymiddenTinv = vy.ToString();
+    ymiddenT.Text = ymiddenTinv;
+    string aantalTinv = n.ToString();
+    aantalT.Text = aantalTinv;
+    string roodv = rv.ToString();
+    rvT.Text = roodv;
+    string groenv = gv.ToString();
+    gvT.Text = groenv;
+    string blauwv = bv.ToString();
+    bvT.Text = blauwv;
+    Bitmapmaken();
+    afbeelding.Invalidate();
+
+
+
+
+}
+void vb2(object a, EventArgs mea)
+{
+    vx = -1.6748947656250004; // parameter voor midden x
+    vy = 4.999999999999647E-07; // parameter voor midden y
+    schaal = 7.031250000000002E-09;  // parameter voor schaal
+    n = 400; // parameter voor max aantal
+    rv = 90;
+    gv = 231;
+    bv = 171;
+    kleurenschema = 1;
+    string schaalinv = schaal.ToString();
+    schalingT.Text = schaalinv;
+    string xmiddenTinv = vx.ToString();
+    xmiddenT.Text = xmiddenTinv;
+    string ymiddenTinv = vy.ToString();
+    ymiddenT.Text = ymiddenTinv;
+    string aantalTinv = n.ToString();
+    aantalT.Text = aantalTinv;
+    string roodv = rv.ToString();
+    rvT.Text = roodv;
+    string groenv = gv.ToString();
+    gvT.Text = groenv;
+    string blauwv = bv.ToString();
+    bvT.Text = blauwv;
+    Bitmapmaken();
+    afbeelding.Invalidate();
+
+
+
+
+}
+void vb3(object a, EventArgs mea)
+{
+    vx = -0.36980062499999994; // parameter voor midden x
+    vy = 0.6498500000000001; // parameter voor midden y
+    schaal = 9.375000000000002E-08;  // parameter voor schaal
+    n = 400; // parameter voor max aantal
+    rv = 67;
+    gv = 67;
+    bv = 67;
+    kleurenschema = 1;
+    string schaalinv = schaal.ToString();
+    schalingT.Text = schaalinv;
+    string xmiddenTinv = vx.ToString();
+    xmiddenT.Text = xmiddenTinv;
+    string ymiddenTinv = vy.ToString();
+    ymiddenT.Text = ymiddenTinv;
+    string aantalTinv = n.ToString();
+    aantalT.Text = aantalTinv;
+    string roodv = rv.ToString();
+    rvT.Text = roodv;
+    string groenv = gv.ToString();
+    gvT.Text = groenv;
+    string blauwv = bv.ToString();
+    bvT.Text = blauwv;
+    Bitmapmaken();
+    afbeelding.Invalidate();
+
+
+
+
+}
+void vb4(object a, EventArgs mea)
+{
+    vx = 0.1521031778538257; // parameter voor midden x
+    vy = 0.6415999930942949; // parameter voor midden y
+    schaal = 1.80406723637134E-16;  // parameter voor schaal
+    n = 500; // parameter voor max aantal
+    rv = 153;
+    gv = 73;
+    bv = 239;
+    kleurenschema = 1;
+    string schaalinv = schaal.ToString();
+    schalingT.Text = schaalinv;
+    string xmiddenTinv = vx.ToString();
+    xmiddenT.Text = xmiddenTinv;
+    string ymiddenTinv = vy.ToString();
+    ymiddenT.Text = ymiddenTinv;
+    string aantalTinv = n.ToString();
+    aantalT.Text = aantalTinv;
+    string roodv = rv.ToString();
+    rvT.Text = roodv;
+    string groenv = gv.ToString();
+    gvT.Text = groenv;
+    string blauwv = bv.ToString();
+    bvT.Text = blauwv;
+    Bitmapmaken();
+    afbeelding.Invalidate();
+
+
+
+
+}
+void resetter(object sender, EventArgs mea)
+{
+    vx = 0;
+    vy = 0;
+    schaal = 0.01;
+    n = 100;
+    kleurenschema = 0;
+    string schaalinv = schaal.ToString();
+    schalingT.Text = schaalinv;
+    string xmiddenTinv = vx.ToString();
+    xmiddenT.Text = xmiddenTinv;
+    string ymiddenTinv = vy.ToString();
+    ymiddenT.Text = ymiddenTinv;
+    string aantalTinv = n.ToString();
+    aantalT.Text = aantalTinv;
+    Bitmapmaken();
+    afbeelding.Invalidate();
+
+}
+void kleurveranderen(object sender, EventArgs mea)
+{
+    if (kleurenschema == 0)
+    {
+        kleurenschema = 1;
+    }
+    else if (kleurenschema == 1)
+    { kleurenschema = 0; }
+    Bitmapmaken();
+    afbeelding.Invalidate();
+}
+
+void muisklik(object a, MouseEventArgs mea)
+{
+
+    hier = mea.Location;
+    vy = vy + -1 * (hier.Y - 200) * schaal;
+    string ymiddenTinv = vy.ToString();
+    ymiddenT.Text = ymiddenTinv;
+    vx = vx + (hier.X - 200) * schaal;
+    string xmiddenTinv = vx.ToString();
+    xmiddenT.Text = xmiddenTinv;
+
+    if (mea.Button == MouseButtons.Left) // inzoomen bij klik linkermuisknop
+    {
+        schaal = schaal * 0.05;
+        string schaalinv = schaal.ToString();
+        schalingT.Text = schaalinv;
+    }
+
+    if (mea.Button == MouseButtons.Right) // uitzoomen bij klik rechtermuisknop
+    {
+        schaal = schaal * 1.5;
+        string schaalinv = schaal.ToString();
+        schalingT.Text = schaalinv;
+    }
+    Bitmapmaken();
+    afbeelding.Invalidate();
+}
+void teken(object sender, PaintEventArgs pea)
+{
+    pea.Graphics.DrawImage(plaatje, 0, 0);
+
+}
+
+
+afbeelding.Paint += teken;
+Bitmapmaken();
+afbeelding.MouseClick += muisklik;
+knop.Click += knopklik;
+reset.Click += resetter;
+voorbeeld1.Click += vb1;
+voorbeeld2.Click += vb2;
+voorbeeld3.Click += vb3;
+voorbeeld4.Click += vb4;
+kleurenmodus.Click += kleurveranderen;
+
+
+
+
+
+
+Application.Run(scherm);
