@@ -102,7 +102,7 @@ afbeelding.Size = new Size(400, 400);
 xmiddenL.Size = new Size(60, 20);
 ymiddenL.Size = new Size(60, 20);
 schalingL.Size = new Size(60, 20);
-aantalL.Size = new Size(100, 20);
+aantalL.Size = new Size(60, 20);
 
 rvL.Size = new Size(40, 20);
 gvL.Size = new Size(40, 20);
@@ -224,7 +224,7 @@ void Bitmapmaken()
 
             if (kleurenschema == 0)
             {
-                // zwart/wit schema: even → zwart, oneven → wit
+                // zwart/wit schema: even zorgt er voor dat het zwart wordt, oneven zorgt er voor dat het  wit wordt
                 kl = i % 2;
                 int j = 1;
                 if (kl == j)
@@ -468,7 +468,7 @@ void muisklik(object a, MouseEventArgs mea)
     afbeelding.Invalidate();
 }
 
-// tekenfunctie: wordt aangeroepen als 'afbeelding' opnieuw getekend moet worden
+// tekenfunctie wordt aangeroepen als 'afbeelding' opnieuw getekend moet worden
 void teken(object sender, PaintEventArgs pea)
 {
     pea.Graphics.DrawImage(plaatje, 0, 0);
