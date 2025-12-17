@@ -1,0 +1,345 @@
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+internal class Program
+{
+    [STAThread]
+    public static void Main()
+    {
+        Application.EnableVisualStyles();
+        Application.SetCompatibleTextRenderingDefault(false);
+        Application.Run(new n());
+    }
+}
+
+internal class n : Form
+{
+    Steen steen = new Steen();
+
+    Button nieuw = new Button();
+    Button help = new Button();
+    ComboBox grootte = new ComboBox();
+
+    Label roodL = new Label();
+    Label blauwL = new Label();
+    Label statusL = new Label();
+
+    bool helpAan = true;
+
+    int cellSize = 45;
+    int margin = 6;
+
+    // waar het bord begint (pixels)
+    int boardX = 20;
+    int boardY = 90;
+
+    public n()
+    {
+        this.Text = "Reversi";
+        this.BackColor = Color.LightYellow;
+
+        // controls
+        nieuw.Text = "nieuw spel";
+        nieuw.Location = new Point(20, 15);
+        nieuw.Click += (s, e) => StartNieuwSpel();
+
+        help.Text = "help";
+        help.Location = new Point(110, 15);
+        help.Click += (s, e) => { helpAan = !helpAan; this.Invalidate(); };
+
+        grootte.DropDownStyle = ComboBoxStyle.DropDownList;
+        grootte.Items.AddRange(new object[] { "4", "6", "8", "10" });
+        grootte.SelectedIndex = 1; // default 6
+        grootte.Location = new Point(170, 15);
+        grootte.SelectedIndexChanged += (s, e) => StartNieuwSpel();
+
+        roodL.Location = new Point(20, 50);
+        roodL.AutoSize = true;
+
+        blauwL.Location = new Point(120, 50);
+        blauwL.AutoSize = true;
+
+        statusL.Location = new Point(220, 50);
+        statusL.AutoSize = true;
+
+        this.Controls.Add(nieuw);
+        this.Controls.Add(help);
+        this.Controls.Add(grootte);
+        this.Controls.Add(roodL);
+        this.Controls.Add(blauwL);
+        this.Controls.Add(statusL);
+
+        this.Paint += teken;
+        this.MouseClick += klik;
+
+        StartNieuwSpel();
+    }
+
+    void StartNieuwSpel()
+    {
+        int nsize = int.Parse(grootte.SelectedItem.ToString());
+        steen.start(nsize);
+
+        // window size (ruimte voor labels boven + bord)
+        int w = boardX * 2 + nsize * cellSize;
+        int h = boardY + nsize * cellSize + 20;
+        this.ClientSize = new Size(Math.Max(w, 360), h);
+
+        UpdateLabels();
+        this.Invalidate();
+    }
+
+    void UpdateLabels()
+    {
+        int rood = steen.tel(1);
+        int blauw = steen.tel(2);
+
+        roodL.Text = $"rood: {rood}";
+        blauwL.Text = $"blauw: {blauw}";
+
+        string beurt = (steen.aanZet == 1) ? "rood aan zet" : "blauw aan zet";
+        if (steen.afgelopen)
+        {
+            if (rood > blauw) statusL.Text = "rood wint";
+            else if (blauw > rood) statusL.Text = "blauw wint";
+            else statusL.Text = "remise";
+        }
+        else
+        {
+            statusL.Text = beurt;
+        }
+    }
+
+    void klik(object sender, MouseEventArgs e)
+    {
+        if (steen.afgelopen) return;
+
+        int col = (e.X - boardX) / cellSize;
+        int row = (e.Y - boardY) / cellSize;
+
+        if (row < 0 || col < 0 || row >= steen.N || col >= steen.N) return;
+
+        // alleen als zet geldig is
+        if (steen.isGeldig(row, col, steen.aanZet))
+        {
+            steen.doeZet(row, col, steen.aanZet);
+
+            // wissel speler (met “passen” als er geen zetten zijn)
+            steen.wisselBeurtMetPas();
+
+            UpdateLabels();
+            this.Invalidate();
+        }
+    }
+
+    void teken(object sender, PaintEventArgs pea)
+    {
+        Graphics g = pea.Graphics;
+
+        int N = steen.N;
+
+        // grid + stenen
+        for (int row = 0; row < N; row++)
+        {
+            for (int col = 0; col < N; col++)
+            {
+                int x = boardX + col * cellSize;
+                int y = boardY + row * cellSize;
+
+                g.DrawRectangle(Pens.Black, x, y, cellSize, cellSize);
+
+                int v = steen.array[row, col];
+
+                if (v != 0)
+                {
+                    Rectangle rect = new Rectangle(
+                        x + margin,
+                        y + margin,
+                        cellSize - 2 * margin,
+                        cellSize - 2 * margin
+                    );
+
+                    if (v == 1) g.FillEllipse(Brushes.Red, rect);
+                    if (v == 2) g.FillEllipse(Brushes.Blue, rect);
+                }
+            }
+        }
+
+        // help: teken geldige zetten als open cirkels
+        if (!steen.afgelopen && helpAan)
+        {
+            for (int row = 0; row < N; row++)
+            {
+                for (int col = 0; col < N; col++)
+                {
+                    if (steen.array[row, col] == 0 && steen.isGeldig(row, col, steen.aanZet))
+                    {
+                        int x = boardX + col * cellSize;
+                        int y = boardY + row * cellSize;
+
+                        int m2 = margin + 10;
+                        Rectangle hint = new Rectangle(
+                            x + m2,
+                            y + m2,
+                            cellSize - 2 * m2,
+                            cellSize - 2 * m2
+                        );
+
+                        g.DrawEllipse(Pens.Gray, hint);
+                    }
+                }
+            }
+        }
+    }
+
+    class Steen
+    {
+        public int[,] array;
+        public int N;
+
+        public int aanZet; // 1 = rood, 2 = blauw
+        public bool afgelopen;
+
+        // 8 richtingen
+        int[] dr = new int[] { -1, -1, -1,  0, 0,  1, 1, 1 };
+        int[] dc = new int[] { -1,  0,  1, -1, 1, -1, 0, 1 };
+
+        public void start(int n)
+        {
+            N = n;
+            array = new int[N, N];
+            afgelopen = false;
+
+            // start: 4 stenen in midden
+            int a = N / 2 - 1;
+            int b = N / 2;
+
+            // patroon zoals jouw plaatje:
+            // (a,a)=blauw (a,b)=rood (b,a)=rood (b,b)=blauw
+            array[a, a] = 2;
+            array[a, b] = 1;
+            array[b, a] = 1;
+            array[b, b] = 2;
+
+            aanZet = 2; // blauw begint (zoals in voorbeeldtekst)
+            // als jij rood wil laten beginnen: aanZet = 1;
+        }
+
+        public int tel(int kleur)
+        {
+            int c = 0;
+            for (int r = 0; r < N; r++)
+                for (int k = 0; k < N; k++)
+                    if (array[r, k] == kleur) c++;
+            return c;
+        }
+
+        int tegen(int p) => (p == 1) ? 2 : 1;
+
+        bool inBord(int r, int c) => r >= 0 && c >= 0 && r < N && c < N;
+
+        public bool isGeldig(int r, int c, int speler)
+        {
+            if (!inBord(r, c)) return false;
+            if (array[r, c] != 0) return false;
+
+            int opp = tegen(speler);
+
+            // er moet in minstens 1 richting: opp...opp gevolgd door speler zitten
+            for (int i = 0; i < 8; i++)
+            {
+                int rr = r + dr[i];
+                int cc = c + dc[i];
+
+                if (!inBord(rr, cc)) continue;
+                if (array[rr, cc] != opp) continue; // moet beginnen met tegenstander
+
+                // loop door tegenstanders
+                rr += dr[i];
+                cc += dc[i];
+
+                while (inBord(rr, cc) && array[rr, cc] == opp)
+                {
+                    rr += dr[i];
+                    cc += dc[i];
+                }
+
+                if (inBord(rr, cc) && array[rr, cc] == speler)
+                    return true;
+            }
+
+            return false;
+        }
+
+        public void doeZet(int r, int c, int speler)
+        {
+            array[r, c] = speler;
+            int opp = tegen(speler);
+
+            // flip in alle richtingen waar het kan
+            for (int i = 0; i < 8; i++)
+            {
+                int rr = r + dr[i];
+                int cc = c + dc[i];
+
+                if (!inBord(rr, cc)) continue;
+                if (array[rr, cc] != opp) continue;
+
+                // zoek einde
+                int r2 = rr, c2 = cc;
+                r2 += dr[i];
+                c2 += dc[i];
+
+                while (inBord(r2, c2) && array[r2, c2] == opp)
+                {
+                    r2 += dr[i];
+                    c2 += dc[i];
+                }
+
+                // alleen flippen als we eindigen op eigen steen
+                if (inBord(r2, c2) && array[r2, c2] == speler)
+                {
+                    // flip terug tot aan (r,c)
+                    while (rr != r2 || cc != c2)
+                    {
+                        array[rr, cc] = speler;
+                        rr += dr[i];
+                        cc += dc[i];
+                    }
+                }
+            }
+
+            // (rr,cc) overschiet is de eigen steen; die laten we staan
+        }
+
+        bool heeftZet(int speler)
+        {
+            for (int r = 0; r < N; r++)
+                for (int c = 0; c < N; c++)
+                    if (isGeldig(r, c, speler)) return true;
+            return false;
+        }
+
+        public void wisselBeurtMetPas()
+        {
+            int other = tegen(aanZet);
+
+            if (heeftZet(other))
+            {
+                aanZet = other;
+                return;
+            }
+
+            // other kan niet -> current blijft als current wel kan
+            if (heeftZet(aanZet))
+            {
+                // aanZet blijft hetzelfde (other “past”)
+                return;
+            }
+
+            // niemand kan -> spel afgelopen
+            afgelopen = true;
+        }
+    }
+}
