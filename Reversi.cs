@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.Drawing;
-using System.Runtime.CompilerServices;
 using System.Windows.Forms;
 
 internal class Program
@@ -21,7 +20,7 @@ internal class N : Form
 
     public N()
     {
-       
+
         this.Text = "n";
         this.BackColor = Color.White;
         this.ClientSize = new Size(360, 560);
@@ -33,13 +32,12 @@ internal class N : Form
     }
     void muisklik(object sender, MouseEventArgs mea)
     {
-        int kolom = (mea.Y-boardY) / cellSize;
-        int rij = (mea.X-boardX) / cellSize;
-       
-        if (steen.legalezet(kolom, rij) == true)
-        {
+        int kolom = (mea.Y - boardY) / cellSize;
+        int rij = (mea.X - boardX) / cellSize;
+
+        
             steen.doezet(kolom, rij);
-        }
+        
         this.Invalidate();
     }
 
@@ -59,11 +57,12 @@ internal class N : Form
 
 
         public void start()
-        { bord = new int[bordgrootte, bordgrootte];
-        //    for (int i = 0; i < bord.getlength(0); i++)
-        //        for (int j = 0; j < bord.getlength(1); j++)
-        //            bord[i, j] = 0;
-           midden = bordgrootte / 2;
+        {
+            bord = new int[bordgrootte, bordgrootte];
+            //    for (int i = 0; i < bord.getlength(0); i++)
+            //        for (int j = 0; j < bord.getlength(1); j++)
+            //            bord[i, j] = 0;
+            midden = bordgrootte / 2;
             int a = midden - 1;
             int b = midden;
 
@@ -74,91 +73,106 @@ internal class N : Form
         }
         public void aanzet()
         {
-            
+
 
             if (blauwzet) { waarde = 1; roodzet = true; blauwzet = false; }
             else
             if (roodzet) { waarde = 2; blauwzet = true; roodzet = false; }
         }
         public int tegenspeler()
-        { if (waarde == 1) return 2;
+        {
+            if (waarde == 1) return 2;
             else return 1;
-                }
- 
+        }
+
         public bool inbord(int r, int k)
-        { 
-                return bordgrootte > r && r >= 0 && bordgrootte > k && k >= 0;
-            
+        {
+            return bordgrootte > r && r >= 0 && bordgrootte > k && k >= 0;
+
         }
         public void doezet(int kolom, int rij)
-        { if (!legalezet(kolom, rij)) return;
+        {
+            if (!Legalezet(kolom, rij)) return;
             bord[kolom, rij] = waarde;
-                for ( int i=0; i < 8 ; i++ ) 
+            int verschoofkolom = kolom;
+            int verschoofrij = rij;
+            
+           
+
+
+            for (int i = 0; i < 8; i++)
             {
-                int verschoofkolom = kolom + verschuifx[i];
-                int verschoofrij = rij + verschuify[i];
+                verschoofkolom = kolom + verschuifx[i];
+                verschoofrij = rij + verschuify[i];
+                if (!inbord(verschoofkolom, verschoofrij)) { continue; }
+                if (bord[verschoofkolom, verschoofrij] != tegenspeler()) { continue; }
+             
+                verschoofkolom = verschoofkolom + verschuifx[i];
+                verschoofrij = verschoofrij + verschuify[i];
                 if (!inbord(verschoofkolom, verschoofrij)) { continue; }
 
-                if (bord[verschoofkolom, verschoofrij] == tegenspeler())
+                while (inbord(verschoofkolom, verschoofrij) && bord[verschoofkolom, verschoofrij] == tegenspeler())
                 {
-                    for (int n = 2; n < bordgrootte; n++)
-                    {
-                        verschoofkolom += verschuifx[i];
-                        verschoofrij += verschuify[i];
-                        if (!inbord(verschoofkolom, verschoofrij)) { break; }
-
-                        if (bord[verschoofkolom, verschoofrij] == waarde) { 
-                        for(int j= n; j >2; j-- ) 
-                                verschoofkolom -= verschuifx[i];
-                            verschoofrij -= verschuify[i];
-                            bord[verschoofkolom,verschoofrij] = waarde;
-                        }
-                    }
+                    verschoofkolom += verschuifx[i];
+                    verschoofrij += verschuify[i];
 
                 }
-                else continue;
 
 
+                if (bord[verschoofkolom, verschoofrij] == waarde)
+                {
+                    
+                    while (!(verschoofkolom== kolom && verschoofrij == rij))
+                    {
+                        bord[verschoofkolom, verschoofrij] = waarde;
+                        verschoofkolom -= verschuifx[i];
+                        verschoofrij-= verschuify[i];
 
-
+                      
+                    }
+                }
+                
             }
 
             aanzet();
 
         }
-        public bool legalezet(int kolom, int rij)
+        public bool Legalezet(int kolom, int rij)
         {
             int verschoofkolom = kolom;
             int verschoofrij = rij;
-            if(!inbord(kolom,rij)) return false;
+            if (!inbord(kolom, rij)) return false;
             if (bord[kolom, rij] != 0) return false;
 
-            
-                for (int i = 0; i < 8; i++)
-                {
-                    verschoofkolom = kolom + verschuifx[i];
-                    verschoofrij = rij + verschuify[i];
+
+            for (int i = 0; i < 8; i++)
+            {
+                verschoofkolom = kolom + verschuifx[i];
+                verschoofrij = rij + verschuify[i];
+                if (!inbord(verschoofkolom, verschoofrij)) { continue; }
+                if (bord[verschoofkolom, verschoofrij] != tegenspeler()) { continue; }
+                verschoofkolom = verschoofkolom + verschuifx[i];
+                verschoofrij = verschoofrij + verschuify[i];
                 if (!inbord(verschoofkolom, verschoofrij)) { continue; }
 
-                if (bord[verschoofkolom, verschoofrij] == tegenspeler())
+                while (inbord(verschoofkolom, verschoofrij) && bord[verschoofkolom, verschoofrij] == tegenspeler())
                 {
-                    while(inbord(verschoofkolom, verschoofrij) && bord[verschoofkolom, verschoofrij] == tegenspeler())
-                    {
-                        verschoofkolom += verschuifx[i];
-                        verschoofrij += verschuify[i];
-                        if ( bord[verschoofkolom, verschoofrij] == waarde ) { return true; } 
-                    }
+                    verschoofkolom += verschuifx[i];
+                    verschoofrij += verschuify[i];
 
                 }
-                else continue;
+
+                if (!inbord(verschoofkolom, verschoofrij)) { continue; }
+                if (bord[verschoofkolom, verschoofrij] == waarde) return true;
+                
 
 
 
-                    
-                }
-               return false;
-         }
-        
+
+            }
+            return false;
+        }
+
         public void teken(object sender, PaintEventArgs pea)
         {
             Graphics g = pea.Graphics;
