@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -32,6 +33,7 @@ internal class N : Form
     Label lblRood;
     Label lblBeurt;
     Label lblGrootte;
+
 
 
 
@@ -111,11 +113,23 @@ internal class N : Form
 
         lblBlauw.Text = $"Blauw: {blauw}";
         lblRood.Text = $"Rood: {rood}";
+        int aanZet = steen.speler;
 
-        int aanZet = steen.WieIsAanZet();
 
-        if (aanZet == 1) lblBeurt.Text = "Aan zet: Blauw";
-        else lblBeurt.Text = "Aan zet: Rood";
+       
+        if (aanZet == 1) { lblBeurt.Text = "Aan zet: Blauw";  }
+        if (aanZet == 2) { lblBeurt.Text = "Aan zet: Rood";  }
+        if (steen.afgelopen())
+        {
+            if (rood == blauw) lblBeurt.Text = "remise";
+            if (blauw > rood) lblBeurt.Text = "Blauw Wint";
+            if (rood > blauw) lblBeurt.Text = "Rood Wint";
+
+            
+          
+           
+        }
+
     }
 
 
@@ -123,7 +137,8 @@ internal class N : Form
     {
         string tekst = cmbBord.SelectedItem.ToString();
         int grootte = int.Parse(tekst.Split('x')[0].Trim());
-        clientsizex = cellSize * grootte;
+        clientsizex = + cellSize * grootte;
+        if (clientsizex < 360) clientsizex = 360; //zorgt ervoor dat bij het 4 bij vier bord de help knop nog altijd in beeld blijft. 
         clientsizey = 200 + cellSize * grootte;
         this.ClientSize = new Size(clientsizex, clientsizey);
         steen.SetBordGrootte(grootte);
@@ -159,7 +174,7 @@ internal class N : Form
         if (!helpAan) return;  // als help uitstaat return dan niks. Je wilt dat hij alleen cicles gaat tekenen wanneer help aan staat.
 
         Graphics g = pea.Graphics;
-        int speler = steen.WieIsAanZet();
+        //int speler = steen.WieIsAanZet();
 
         int n = steen.bord.GetLength(0);  // controleert de bordgrootte
 
@@ -169,7 +184,7 @@ internal class N : Form
             {
                 if (steen.bord[kolom, rij] != 0) continue; // als vakje niet leeg is sla je het over
 
-                if (steen.Legalezet(kolom, rij))
+                if (steen.Legalezet(kolom, rij,steen.speler))
                 {
                     int x = boardX + rij * cellSize;
                     int y = boardY + kolom * cellSize;   // rekent uit waar op de scherm het vakje is
@@ -206,7 +221,7 @@ internal class N : Form
     class Steen
     {
         int cellSize = 60;
-        int waarde = 2;
+        public int speler = 2;
         int bordgrootte = 6;
         int midden;
         public int[,] bord;
@@ -243,14 +258,17 @@ internal class N : Form
         public void aanzet()
         {
 
-
-            if (blauwzet) { waarde = 1; roodzet = true; blauwzet = false; }
+          
+            if (!isereenblauwezet()) {  roodzet = true; blauwzet = false; }
+            if (!isereenrodezet()) { roodzet = false; blauwzet = true; }
+            if (blauwzet) { speler = 1; roodzet = true; blauwzet = false; }
             else
-            if (roodzet) { waarde = 2; blauwzet = true; roodzet = false; }
+            if (roodzet) { speler = 2; blauwzet = true; roodzet = false; }
+           
         }
-        public int tegenspeler()
+        public int tegenspeler(int speler)
         {
-            if (waarde == 1) return 2;
+            if (speler == 1) return 2;
             else return 1;
         }
 
@@ -261,8 +279,8 @@ internal class N : Form
         }
         public void doezet(int kolom, int rij)
         {
-            if (!Legalezet(kolom, rij)) return;
-            bord[kolom, rij] = waarde;
+            if (!Legalezet(kolom, rij,speler)) return;
+            bord[kolom, rij] = speler;
             int verschoofkolom = kolom;
             int verschoofrij = rij;
 
@@ -274,13 +292,13 @@ internal class N : Form
                 verschoofkolom = kolom + verschuifx[i];
                 verschoofrij = rij + verschuify[i];
                 if (!inbord(verschoofkolom, verschoofrij)) { continue; }
-                if (bord[verschoofkolom, verschoofrij] != tegenspeler()) { continue; }
+                if (bord[verschoofkolom, verschoofrij] != tegenspeler(speler)) { continue; }
 
                 verschoofkolom = verschoofkolom + verschuifx[i];
                 verschoofrij = verschoofrij + verschuify[i];
                 if (!inbord(verschoofkolom, verschoofrij)) { continue; }
 
-                while (inbord(verschoofkolom, verschoofrij) && bord[verschoofkolom, verschoofrij] == tegenspeler())
+                while (inbord(verschoofkolom, verschoofrij) && bord[verschoofkolom, verschoofrij] == tegenspeler(speler))
                 {
                     verschoofkolom += verschuifx[i];
                     verschoofrij += verschuify[i];
@@ -289,12 +307,12 @@ internal class N : Form
 
 
                 if (!inbord(verschoofkolom, verschoofrij)) { continue; }
-                if (bord[verschoofkolom, verschoofrij] == waarde)
+                if (bord[verschoofkolom, verschoofrij] == speler)
                 {
 
                     while (!(verschoofkolom == kolom && verschoofrij == rij))
                     {
-                        bord[verschoofkolom, verschoofrij] = waarde;
+                        bord[verschoofkolom, verschoofrij] = speler;
                         verschoofkolom -= verschuifx[i];
                         verschoofrij -= verschuify[i];
 
@@ -307,7 +325,7 @@ internal class N : Form
             aanzet();
 
         }
-        public bool Legalezet(int kolom, int rij)
+        public bool Legalezet(int kolom, int rij, int speler)
         {
             int verschoofkolom = kolom;
             int verschoofrij = rij;
@@ -320,12 +338,12 @@ internal class N : Form
                 verschoofkolom = kolom + verschuifx[i];
                 verschoofrij = rij + verschuify[i];
                 if (!inbord(verschoofkolom, verschoofrij)) { continue; }
-                if (bord[verschoofkolom, verschoofrij] != tegenspeler()) { continue; }
+                if (bord[verschoofkolom, verschoofrij] != tegenspeler(speler)) { continue; }
                 verschoofkolom = verschoofkolom + verschuifx[i];
                 verschoofrij = verschoofrij + verschuify[i];
                 if (!inbord(verschoofkolom, verschoofrij)) { continue; }
 
-                while (inbord(verschoofkolom, verschoofrij) && bord[verschoofkolom, verschoofrij] == tegenspeler())
+                while (inbord(verschoofkolom, verschoofrij) && bord[verschoofkolom, verschoofrij] == tegenspeler(speler))
                 {
                     verschoofkolom += verschuifx[i];
                     verschoofrij += verschuify[i];
@@ -333,7 +351,7 @@ internal class N : Form
                 }
 
                 if (!inbord(verschoofkolom, verschoofrij)) { continue; }
-                if (bord[verschoofkolom, verschoofrij] == waarde) return true;
+                if (bord[verschoofkolom, verschoofrij] == speler) return true;
 
 
 
@@ -358,16 +376,16 @@ internal class N : Form
             return blauw;
         }
 
-        public bool LegalezetVoorSpeler(int kolom, int rij, int speler)
+       /* public bool LegalezetVoorSpeler(int kolom, int rij, int speler)
         {
-            int oudeWaarde = waarde; // onthoudt wie er aan zet is
-            waarde = speler; // verandert waarde naar voor wie je wilt controleren
+            int oudespeler = speler; // onthoudt wie er aan zet is
+            speler = speler; // verandert speler naar voor wie je wilt controleren
 
             bool ok = Legalezet(kolom, rij); // controleert of de zet legaal is voor "speler"
 
-            waarde = oudeWaarde; // verandert waarde weer terug naar de start positie zodat je niks op het board verandert (het is gewoon een controlle)
+            speler = oudespeler; // verandert speler weer terug naar de start positie zodat je niks op het board verandert (het is gewoon een controlle)
             return ok;
-        }
+        } */
 
 
 
@@ -384,13 +402,42 @@ internal class N : Form
 
             }
             return rood;
+
         }
+        public bool isereenblauwezet()
+        { int speler = 1;
+            for (int kolom = 0; kolom < bordgrootte; kolom++)
+            {
+                for (int rij = 0; rij < bordgrootte; rij++)
+                {
+                    if (Legalezet(kolom, rij, speler)) return true;
+                }
 
-
-        public int WieIsAanZet()
+            }
+            return false;
+           
+        }
+        public bool isereenrodezet()
         {
-            return waarde; // 1 = blauw, 2 = rood
+            int speler = 2;
+            for (int kolom = 0; kolom < bordgrootte; kolom++)
+            {
+                for (int rij = 0; rij < bordgrootte; rij++)
+                {
+                    if (Legalezet(kolom, rij, speler)) return true;
+                }
+
+            }
+            return false;
         }
+public bool afgelopen()
+        { if (isereenblauwezet() | isereenrodezet()) return false;
+        else return true;
+        }
+        /*public int WieIsAanZet()
+        {
+            return speler; // 1 = blauw, 2 = rood
+        } */
         public void teken(object sender, PaintEventArgs pea)
         {
             Graphics g = pea.Graphics;
