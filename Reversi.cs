@@ -32,7 +32,7 @@ internal class N : Form
     Label lblRood;
     Label lblBeurt;
     Label lblGrootte;
-   
+
 
 
     public N()
@@ -139,7 +139,7 @@ internal class N : Form
         steen.start();
         updatekleurlabels();
         this.Invalidate();
-      
+
 
     }
 
@@ -169,7 +169,7 @@ internal class N : Form
             {
                 if (steen.bord[kolom, rij] != 0) continue; // als vakje niet leeg is sla je het over
 
-                if (steen.LegalezetVoorSpeler(kolom, rij, speler))
+                if (steen.Legalezet(kolom, rij))
                 {
                     int x = boardX + rij * cellSize;
                     int y = boardY + kolom * cellSize;   // rekent uit waar op de scherm het vakje is
