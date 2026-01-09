@@ -1,471 +1,488 @@
-    using System;
-    using System.Diagnostics.Eventing.Reader;
-    using System.Drawing;
-    using System.Windows.Forms;
+   using System;
+using System.Diagnostics.Eventing.Reader;
+using System.Drawing;
+using System.Windows.Forms;
 
-    internal class Program
+internal class Program
+{
+    [STAThreadAttribute]
+    public static void Main()
     {
-        [STAThreadAttribute]
-        public static void Main()
+        Application.Run(new N());              
+    }
+}
+
+internal class N : Form
+{
+    ComboBox cmbBord;                        
+    Button btnNieuw;                         
+    Button btnHelp;                        
+
+    bool helpAan = false;                     
+
+    int clientsizex = 360;                  
+    int clientsizey = 560;                  
+    int cellSize = 60;                       
+
+    Steen steen = new Steen();              
+    public int boardX = 0;                    
+    public int boardY = 200;                 
+    Label lblBlauw;                           
+    Label lblRood;                           
+    Label lblBeurt;                          
+    Label lblGrootte;                         
+
+    public N()
+    {
+        this.Paint += FormPaint;           
+
+        this.Text = "n";                   
+        this.BackColor = Color.White;       
+        this.ClientSize = new Size(clientsizex, clientsizey); 
+
+        lblBlauw = new Label();
+        lblBlauw.Location = new Point(30, 10); 
+        lblBlauw.AutoSize = true;             
+
+        lblRood = new Label();
+        lblRood.Location = new Point(30, 35);
+        lblRood.AutoSize = true;
+
+        lblBeurt = new Label();
+        lblBeurt.Location = new Point(10, 60);
+        lblBeurt.AutoSize = true;
+
+        lblGrootte = new Label();
+        lblGrootte.Text = "Bordgrootte:";    
+        lblGrootte.AutoSize = true;
+        lblGrootte.Location = new Point(10, 90);
+
+        btnNieuw = new Button();
+        btnNieuw.Text = "nieuw spel";         
+        btnNieuw.Location = new Point(140, 10);
+        btnNieuw.AutoSize = true;
+        btnNieuw.Click += NieuwSpelKlik;      
+
+        btnHelp = new Button();
+        btnHelp.Text = "help";
+        btnHelp.Location = new Point(230, 10);
+        btnHelp.AutoSize = true;
+        btnHelp.Click += HelpKlik;            
+
+        
+        this.Controls.Add(lblGrootte);
+        this.Controls.Add(lblBeurt);
+        this.Controls.Add(lblBlauw);
+        this.Controls.Add(lblRood);
+        this.Controls.Add(btnNieuw);
+        this.Controls.Add(btnHelp);
+
+        steen.start();                        
+        updatekleurlabels();                   
+        this.MouseClick += muisklik;           
+
+        this.Invalidate();                    
+
+        cmbBord = new ComboBox();
+        cmbBord.Location = new Point(100, 90);
+        cmbBord.DropDownStyle = ComboBoxStyle.DropDownList; 
+
+        // opties in dropdown
+        cmbBord.Items.Add("4 x 4");
+        cmbBord.Items.Add("6 x 6");
+        cmbBord.Items.Add("8 x 8");
+        cmbBord.Items.Add("10 x 10");
+
+        cmbBord.SelectedIndex = 1;             // start op 6 x 6
+        cmbBord.SelectedIndexChanged += BordGrootteVeranderd; // wanneer user iets anders kiest
+
+        this.Controls.Add(cmbBord);            // voeg combobox toe
+    }
+
+    void updatekleurlabels()
+    {
+        int blauw = steen.TelBlauw();          // telt blauwe stenen op bord
+        int rood = steen.TelRood();            // telt rode stenen op bord
+
+        lblBlauw.Text = $"Blauw: {blauw}";     // zet tekst van blauw label
+        lblRood.Text = $"Rood: {rood}";        // zet tekst van rood label
+        int aanZet = steen.speler;             // wie is aan zet (1=blauw, 2=rood)
+
+        if (aanZet == 1)
         {
-            Application.Run(new N());
+            lblBeurt.Text = "Aan zet: Blauw";  // status tekst
+            lblBeurt.ForeColor = Color.Blue;  // status kleur
+        }
+
+        if (aanZet == 2)
+        {
+            lblBeurt.Text = "Aan zet: Rood";
+            lblBeurt.ForeColor = Color.Red;
+        }
+
+        if (steen.afgelopen())                 // spel klaar als niemand nog legale zetten heeft
+        {
+            if (rood == blauw)
+            {
+                lblBeurt.Text = "remise";      // gelijkspel
+                lblBeurt.ForeColor = Color.Black;
+            }
+            if (blauw > rood)
+            {
+                lblBeurt.Text = "Blauw Wint";  // blauw wint
+                lblBeurt.ForeColor = Color.Blue;
+            }
+            if (rood > blauw)
+            {
+                lblBeurt.Text = "Rood Wint";   // rood wint
+                lblBeurt.ForeColor = Color.Red;
+            }
         }
     }
-    internal class N : Form
+
+    void BordGrootteVeranderd(object sender, EventArgs e)
     {
+        string tekst = cmbBord.SelectedItem.ToString();       // bv "8 x 8"
+        int grootte = int.Parse(tekst.Split('x')[0].Trim());  // pakt eerste getal (8)
 
+        clientsizex = +cellSize * grootte;                    // nieuwe breedte op basis van vakjes
+        if (clientsizex < 360) clientsizex = 360;             // minimum breedte voor UI
+        clientsizey = 200 + cellSize * grootte;               // 200px UI + bordhoogte
+        this.ClientSize = new Size(clientsizex, clientsizey); // pas window aan
 
-        ComboBox cmbBord;
+        steen.SetBordGrootte(grootte);                        // update bordgrootte in logica
+        steen.start();                                        // reset bord met nieuwe grootte
+        updatekleurlabels();                                  // update labels
+        this.Invalidate();                                    // redraw alles
+    }
 
-        Button btnNieuw;
-        Button btnHelp;
+    void NieuwSpelKlik(object sender, EventArgs e)
+    {
+        helpAan = false;                      // help uitzetten bij nieuw spel
+        steen.start();                        // reset bord
+        updatekleurlabels();                  // update labels
+        this.Invalidate();                    // redraw
+    }
 
-        bool helpAan = false;
+    void HelpKlik(object sender, EventArgs e)
+    {
+        helpAan = !helpAan;                   // toggle hints
 
-        int clientsizex = 360;
-        int clientsizey = 560;
-        int cellSize = 60;
-
-        Steen steen = new Steen();
-        public int boardX = 0;
-        public int boardY = 200;
-        Label lblBlauw;
-        Label lblRood;
-        Label lblBeurt;
-        Label lblGrootte;
-
-
-
-
-        public N()
+        if (helpAan)
         {
-
-            this.Paint += FormPaint;
-
-            this.Text = "n";
-            this.BackColor = Color.White;
-            this.ClientSize = new Size(clientsizex, clientsizey);
-
-            lblBlauw = new Label();
-            lblBlauw.Location = new Point(10, 10);
-            lblBlauw.AutoSize = true;
-
-            lblRood = new Label();
-            lblRood.Location = new Point(10, 35);
-            lblRood.AutoSize = true;
-
-            lblBeurt = new Label();
-            lblBeurt.Location = new Point(10, 60);
-            lblBeurt.AutoSize = true;
-
-            lblGrootte = new Label();
-            lblGrootte.Text = "Bordgrootte:";
-            lblGrootte.AutoSize = true;
-            lblGrootte.Location = new Point(10, 90);
-
-            btnNieuw = new Button();
-            btnNieuw.Text = "nieuw spel";
-            btnNieuw.Location = new Point(140, 10);
-            btnNieuw.AutoSize = true;
-            btnNieuw.Click += NieuwSpelKlik;
-
-
-            btnHelp = new Button();
-            btnHelp.Text = "help";
-            btnHelp.Location = new Point(230, 10);
-            btnHelp.AutoSize = true;
-            btnHelp.Click += HelpKlik;
-
-
-            this.Controls.Add(lblGrootte);
-            this.Controls.Add(lblBeurt);
-            this.Controls.Add(lblBlauw);
-            this.Controls.Add(lblRood);
-            this.Controls.Add(btnNieuw);
-            this.Controls.Add(btnHelp);
-
-            steen.start();
-            updatekleurlabels();
-            this.MouseClick += muisklik;
-            this.Paint += steen.teken;
-            this.Invalidate();
-
-            cmbBord = new ComboBox();
-            cmbBord.Location = new Point(100, 90);
-            cmbBord.DropDownStyle = ComboBoxStyle.DropDownList;
-
-            cmbBord.Items.Add("4 x 4");
-            cmbBord.Items.Add("6 x 6");
-            cmbBord.Items.Add("8 x 8");
-            cmbBord.Items.Add("10 x 10");
-
-            cmbBord.SelectedIndex = 1; // start op 6x6
-            cmbBord.SelectedIndexChanged += BordGrootteVeranderd;
-
-            this.Controls.Add(cmbBord);
-
-
+            btnHelp.BackColor = Color.LightGreen; // visuele feedback: help is aan
+            btnHelp.Text = "Help: aan";
         }
-        void updatekleurlabels()
+        else
         {
-            int blauw = steen.TelBlauw();
-            int rood = steen.TelRood();
+            btnHelp.BackColor = Color.White;      // visuele feedback: help is uit
+            btnHelp.Text = "Help: uit";
+        }
 
-            lblBlauw.Text = $"Blauw: {blauw}";
-            lblRood.Text = $"Rood: {rood}";
-            int aanZet = steen.speler;
+        this.Invalidate();                    // redraw zodat hint-cirkels wel/niet verschijnen
+    }
 
+    void FormPaint(object sender, PaintEventArgs pea)
+    {
+        steen.teken(sender, pea);             // tekent bord + stenen
 
-       
-            if (aanZet == 1) { lblBeurt.Text = "Aan zet: Blauw";  }
-            if (aanZet == 2) { lblBeurt.Text = "Aan zet: Rood";  }
-            if (steen.afgelopen())
+        // kies kleur voor smiley op basis van aan zet
+        Brush br = (steen.speler == 1) ? Brushes.Blue : Brushes.Red;
+        Pen p = (steen.speler == 1) ? Pens.Blue : Pens.Red;
+
+        // smiley rechtsboven (vaste coordinates)
+        pea.Graphics.DrawEllipse(p, 326, 10, 24, 24);     // hoofd
+        pea.Graphics.FillEllipse(br, 333, 18, 3, 3);      // oog links
+        pea.Graphics.FillEllipse(br, 341, 18, 3, 3);      // oog rechts
+        pea.Graphics.DrawArc(p, 332, 22, 12, 8, 10, 160); // mond
+
+        int d = 14;                        // diameter score-bolletjes
+        int gap = 6;                       // afstand van bolletje tot label
+
+        // blauw bolletje naast lblBlauw
+        pea.Graphics.FillEllipse(Brushes.Blue,
+            lblBlauw.Left - d - gap,
+            lblBlauw.Top + (lblBlauw.Height - d) / 2,
+            d, d);
+
+        pea.Graphics.DrawEllipse(Pens.DimGray,
+            lblBlauw.Left - d - gap,
+            lblBlauw.Top + (lblBlauw.Height - d) / 2,
+            d, d);
+
+        // rood bolletje naast lblRood
+        pea.Graphics.FillEllipse(Brushes.Red,
+            lblRood.Left - d - gap,
+            lblRood.Top + (lblRood.Height - d) / 2,
+            d, d);
+
+        pea.Graphics.DrawEllipse(Pens.DimGray,
+            lblRood.Left - d - gap,
+            lblRood.Top + (lblRood.Height - d) / 2,
+            d, d);
+
+        if (!helpAan) return;              // als help uit is: teken geen hint-cirkels
+
+        Graphics g = pea.Graphics;         // kortere naam
+
+        int n = steen.bord.GetLength(0);   // bordgrootte (n x n)
+
+        for (int kolom = 0; kolom < n; kolom++)
+        {
+            for (int rij = 0; rij < n; rij++)
             {
-                if (rood == blauw) lblBeurt.Text = "remise";
-                if (blauw > rood) lblBeurt.Text = "Blauw Wint";
-                if (rood > blauw) lblBeurt.Text = "Rood Wint";
+                if (steen.bord[kolom, rij] != 0) continue; // bezet vakje: geen hint
 
-            
-          
-           
-            }
-
-        }
-
-
-        void BordGrootteVeranderd(object sender, EventArgs e)
-        {
-            string tekst = cmbBord.SelectedItem.ToString();
-            int grootte = int.Parse(tekst.Split('x')[0].Trim());
-            clientsizex = + cellSize * grootte;
-            if (clientsizex < 360) clientsizex = 360; //zorgt ervoor dat bij het 4 bij vier bord de help knop nog altijd in beeld blijft. 
-            clientsizey = 200 + cellSize * grootte;
-            this.ClientSize = new Size(clientsizex, clientsizey);
-            steen.SetBordGrootte(grootte);
-            steen.start();
-            updatekleurlabels();
-            this.Invalidate();
-
-        }
-
-        void NieuwSpelKlik(object sender, EventArgs e)
-        {
-            helpAan = false;
-            steen.start();
-            updatekleurlabels();
-            this.Invalidate();
-
-
-        }
-
-
-
-
-        void HelpKlik(object sender, EventArgs e)
-        {
-            helpAan = !helpAan;   // toggle (aan/uit)
-            this.Invalidate();    // redraw zodat hulp-cirkels wel/niet verschijnen
-        }
-
-        void FormPaint(object sender, PaintEventArgs pea)
-        {
-            steen.teken(sender, pea);  //roept je teken functie op
-
-            if (!helpAan) return;  // als help uitstaat return dan niks. Je wilt dat hij alleen cicles gaat tekenen wanneer help aan staat.
-
-            Graphics g = pea.Graphics;
-            //int speler = steen.WieIsAanZet();
-
-            int n = steen.bord.GetLength(0);  // controleert de bordgrootte
-
-            for (int kolom = 0; kolom < n; kolom++)
-            {
-                for (int rij = 0; rij < n; rij++)
+                if (steen.Legalezet(kolom, rij, steen.speler)) // legale zet voor huidige speler?
                 {
-                    if (steen.bord[kolom, rij] != 0) continue; // als vakje niet leeg is sla je het over
+                    int x = boardX + rij * cellSize;           // pixel x van vakje
+                    int y = boardY + kolom * cellSize;         // pixel y van vakje
 
-                    if (steen.Legalezet(kolom, rij,steen.speler))
-                    {
-                        int x = boardX + rij * cellSize;
-                        int y = boardY + kolom * cellSize;   // rekent uit waar op de scherm het vakje is
+                    int m = cellSize / 3;                      // marge voor kleinere hintcirkel
+                    Rectangle hint = new Rectangle(
+                        x + m, y + m,
+                        cellSize - 2 * m, cellSize - 2 * m);
 
-                        int m = cellSize / 3;  // je wilt dat de cirkel kleiner is dan het vakje zodat het er niet rommelig uitziet.
-                        Rectangle hint = new Rectangle(x + m, y + m, cellSize - 2 * m, cellSize - 2 * m);
-
-
-                        g.DrawEllipse(Pens.Gray, hint);
-                    }
+                    g.DrawEllipse(Pens.Gray, hint);             // teken hint-cirkel
                 }
             }
         }
+    }
 
+    void muisklik(object sender, MouseEventArgs mea)
+    {
+        int kolom = (mea.Y - boardY) / cellSize; // muis y -> bord kolom-index
+        int rij = (mea.X - boardX) / cellSize;   // muis x -> bord rij-index
 
+        steen.doezet(kolom, rij);                // doet zet (alleen als legaal)
+        updatekleurlabels();                     // update labels na zet
+        this.Invalidate();                       // redraw
+    }
 
+    class Steen
+    {
+        int cellSize = 60;                       // grootte van vakje (moet overeenkomen met form)
+        public int speler = 2;                   // 1 = blauw, 2 = rood
+        int bordgrootte = 6;                     // start bordgrootte
+        int midden;                              // midden index voor startpositie
+        public int[,] bord;                      // bord array: 0 leeg, 1 blauw, 2 rood
 
-        void muisklik(object sender, MouseEventArgs mea)
+        bool roodzet = false;                    // (lijkt ongebruikt, maar laten we zoals jij het had)
+        bool blauwzet = true;                    // (lijkt ongebruikt, maar laten we zoals jij het had)
+
+        int[] verschuifx = new int[] { -1, -1, -1, 0, 0, 1, 1, 1 }; // richtingen (kolom)
+        int[] verschuify = new int[] { -1, 0, 1, -1, 1, -1, 0, 1 }; // richtingen (rij)
+
+        public int boardX = 0;                   // linkerboven x van bord (in tekenen)
+        public int boardY = 200;                 // linkerboven y van bord (in tekenen)
+
+        public void start()
         {
-            int kolom = (mea.Y - boardY) / cellSize;
-            int rij = (mea.X - boardX) / cellSize;
+            bord = new int[bordgrootte, bordgrootte]; // nieuw leeg bord
+            midden = bordgrootte / 2;                 // bereken midden
+            int a = midden - 1;
+            int b = midden;
 
-
-            steen.doezet(kolom, rij);
-
-            updatekleurlabels();
-            this.Invalidate();
-
+            // startpositie Reversi/Othello (4 stenen in het midden)
+            bord[a, a] = 2;
+            bord[a, b] = 1;
+            bord[b, a] = 1;
+            bord[b, b] = 2;
         }
 
-
-
-
-        class Steen
+        public void SetBordGrootte(int g)
         {
-            int cellSize = 60;
-            public int speler = 2;
-            int bordgrootte = 6;
-            int midden;
-            public int[,] bord;
-            bool roodzet = false;
-            bool blauwzet = true;
-            int[] verschuifx = new int[] { -1, -1, -1, 0, 0, 1, 1, 1 };
-            int[] verschuify = new int[] { -1, 0, 1, -1, 1, -1, 0, 1 };
-            public int boardX = 0;
-            public int boardY = 200;
+            bordgrootte = g;                     // zet nieuwe bordgrootte
+        }
 
+        public void aanzet()
+        {
+            // wissel speler alleen als de andere speler ook echt een zet heeft
+            if (speler == 2 && isereenblauwezet()) speler = 1;
+            else if (speler == 1 && isereenrodezet()) speler = 2;
+        }
 
-            public void start()
+        public int tegenspeler(int speler)
+        {
+            if (speler == 1) return 2;           // blauw -> rood
+            else return 1;                       // rood -> blauw
+        }
+
+        public bool inbord(int r, int k)
+        {
+            // check of r,k binnen 0..bordgrootte-1 valt
+            return bordgrootte > r && r >= 0 && bordgrootte > k && k >= 0;
+        }
+
+        public void doezet(int kolom, int rij)
+        {
+            if (!Legalezet(kolom, rij, speler)) return; // illegale zet: stop
+
+            bord[kolom, rij] = speler;                 // zet steen neer
+
+            int verschoofkolom = kolom;                // helpers voor het lopen
+            int verschoofrij = rij;
+
+            // check 8 richtingen om stenen te flippen
+            for (int i = 0; i < 8; i++)
             {
-                bord = new int[bordgrootte, bordgrootte];
-                //    for (int i = 0; i < bord.getlength(0); i++)
-                //        for (int j = 0; j < bord.getlength(1); j++)
-                //            bord[i, j] = 0;
-                midden = bordgrootte / 2;
-                int a = midden - 1;
-                int b = midden;
+                verschoofkolom = kolom + verschuifx[i];
+                verschoofrij = rij + verschuify[i];
+                if (!inbord(verschoofkolom, verschoofrij)) { continue; }
+                if (bord[verschoofkolom, verschoofrij] != tegenspeler(speler)) { continue; }
 
-                bord[a, a] = 2;
-                bord[a, b] = 1;
-                bord[b, a] = 1;
-                bord[b, b] = 2;
-            }
+                verschoofkolom = verschoofkolom + verschuifx[i];
+                verschoofrij = verschoofrij + verschuify[i];
+                if (!inbord(verschoofkolom, verschoofrij)) { continue; }
 
-            public void SetBordGrootte(int g)
-            {
-                bordgrootte = g;
-            }
-
-
-            public void aanzet()
-            { if (speler == 2 && isereenblauwezet()) speler = 1;
-              else if (speler== 1 && isereenrodezet()) speler = 2;
-
-          
-            }
-            public int tegenspeler(int speler)
-            {
-                if (speler == 1) return 2;
-                else return 1;
-            }
-
-            public bool inbord(int r, int k)
-            {
-                return bordgrootte > r && r >= 0 && bordgrootte > k && k >= 0;
-
-            }
-            public void doezet(int kolom, int rij)
-            {
-                if (!Legalezet(kolom, rij,speler)) return;
-                bord[kolom, rij] = speler;
-                int verschoofkolom = kolom;
-                int verschoofrij = rij;
-
-
-
-
-                for (int i = 0; i < 8; i++)
+                while (inbord(verschoofkolom, verschoofrij) &&
+                       bord[verschoofkolom, verschoofrij] == tegenspeler(speler))
                 {
-                    verschoofkolom = kolom + verschuifx[i];
-                    verschoofrij = rij + verschuify[i];
-                    if (!inbord(verschoofkolom, verschoofrij)) { continue; }
-                    if (bord[verschoofkolom, verschoofrij] != tegenspeler(speler)) { continue; }
-
-                    verschoofkolom = verschoofkolom + verschuifx[i];
-                    verschoofrij = verschoofrij + verschuify[i];
-                    if (!inbord(verschoofkolom, verschoofrij)) { continue; }
-
-                    while (inbord(verschoofkolom, verschoofrij) && bord[verschoofkolom, verschoofrij] == tegenspeler(speler))
-                    {
-                        verschoofkolom += verschuifx[i];
-                        verschoofrij += verschuify[i];
-
-                    }
-
-
-                    if (!inbord(verschoofkolom, verschoofrij)) { continue; }
-                    if (bord[verschoofkolom, verschoofrij] == speler)
-                    {
-
-                        while (!(verschoofkolom == kolom && verschoofrij == rij))
-                        {
-                            bord[verschoofkolom, verschoofrij] = speler;
-                            verschoofkolom -= verschuifx[i];
-                            verschoofrij -= verschuify[i];
-
-
-                        }
-                    }
-
+                    verschoofkolom += verschuifx[i];
+                    verschoofrij += verschuify[i];
                 }
 
-                aanzet();
-
-            }
-            public bool Legalezet(int kolom, int rij, int speler)
-            {
-                int verschoofkolom = kolom;
-                int verschoofrij = rij;
-                if (!inbord(kolom, rij)) return false;
-                if (bord[kolom, rij] != 0) return false;
-
-
-                for (int i = 0; i < 8; i++)
+                if (!inbord(verschoofkolom, verschoofrij)) { continue; }
+                if (bord[verschoofkolom, verschoofrij] == speler)
                 {
-                    verschoofkolom = kolom + verschuifx[i];
-                    verschoofrij = rij + verschuify[i];
-                    if (!inbord(verschoofkolom, verschoofrij)) { continue; }
-                    if (bord[verschoofkolom, verschoofrij] != tegenspeler(speler)) { continue; }
-                    verschoofkolom = verschoofkolom + verschuifx[i];
-                    verschoofrij = verschoofrij + verschuify[i];
-                    if (!inbord(verschoofkolom, verschoofrij)) { continue; }
-
-                    while (inbord(verschoofkolom, verschoofrij) && bord[verschoofkolom, verschoofrij] == tegenspeler(speler))
+                    // flip terug tot aan beginpositie
+                    while (!(verschoofkolom == kolom && verschoofrij == rij))
                     {
-                        verschoofkolom += verschuifx[i];
-                        verschoofrij += verschuify[i];
-
-                    }
-
-                    if (!inbord(verschoofkolom, verschoofrij)) { continue; }
-                    if (bord[verschoofkolom, verschoofrij] == speler) return true;
-
-
-
-
-
-                }
-                return false;
-            }
-
-            public int TelBlauw()
-            {
-                int blauw = 0;
-
-                for (int r = 0; r < bordgrootte; r++)
-                {
-                    for (int c = 0; c < bordgrootte; c++)
-                    {
-                        if (bord[r, c] == 1) blauw++;
+                        bord[verschoofkolom, verschoofrij] = speler;
+                        verschoofkolom -= verschuifx[i];
+                        verschoofrij -= verschuify[i];
                     }
                 }
-
-                return blauw;
             }
 
-           /* public bool LegalezetVoorSpeler(int kolom, int rij, int speler)
+            aanzet(); // update wie aan zet is na de zet
+        }
+
+        public bool Legalezet(int kolom, int rij, int speler)
+        {
+            int verschoofkolom = kolom;
+            int verschoofrij = rij;
+
+            if (!inbord(kolom, rij)) return false; // buiten bord
+            if (bord[kolom, rij] != 0) return false; // niet leeg
+
+            // check of er in een richting minimaal 1 tegenstander zit en daarna jouw steen
+            for (int i = 0; i < 8; i++)
             {
-                int oudespeler = speler; // onthoudt wie er aan zet is
-                speler = speler; // verandert speler naar voor wie je wilt controleren
+                verschoofkolom = kolom + verschuifx[i];
+                verschoofrij = rij + verschuify[i];
+                if (!inbord(verschoofkolom, verschoofrij)) { continue; }
+                if (bord[verschoofkolom, verschoofrij] != tegenspeler(speler)) { continue; }
 
-                bool ok = Legalezet(kolom, rij); // controleert of de zet legaal is voor "speler"
+                verschoofkolom = verschoofkolom + verschuifx[i];
+                verschoofrij = verschoofrij + verschuify[i];
+                if (!inbord(verschoofkolom, verschoofrij)) { continue; }
 
-                speler = oudespeler; // verandert speler weer terug naar de start positie zodat je niks op het board verandert (het is gewoon een controlle)
-                return ok;
-            } */
+                while (inbord(verschoofkolom, verschoofrij) &&
+                       bord[verschoofkolom, verschoofrij] == tegenspeler(speler))
+                {
+                    verschoofkolom += verschuifx[i];
+                    verschoofrij += verschuify[i];
+                }
 
+                if (!inbord(verschoofkolom, verschoofrij)) { continue; }
+                if (bord[verschoofkolom, verschoofrij] == speler) return true; // gevonden: dus legaal
+            }
 
+            return false; // in geen enkele richting geldig
+        }
 
-            public int TelRood()
+        public int TelBlauw()
+        {
+            int blauw = 0;
+            for (int r = 0; r < bordgrootte; r++)
             {
-                int rood = 0;
-
-                for (int r = 0; r < bordgrootte; r++)
+                for (int c = 0; c < bordgrootte; c++)
                 {
-                    for (int c = 0; c < bordgrootte; c++)
-                    {
-                        if (bord[r, c] == 2) rood++;
-                    }
-
+                    if (bord[r, c] == 1) blauw++; // tel alle 1’s
                 }
-                return rood;
-
             }
-            public bool isereenblauwezet()
-            { int speler = 1;
-                for (int kolom = 0; kolom < bordgrootte; kolom++)
-                {
-                    for (int rij = 0; rij < bordgrootte; rij++)
-                    {
-                        if (Legalezet(kolom, rij, speler)) return true;
-                    }
+            return blauw;
+        }
 
-                }
-                return false;
-           
-            }
-            public bool isereenrodezet()
+        public int TelRood()
+        {
+            int rood = 0;
+            for (int r = 0; r < bordgrootte; r++)
             {
-                int speler = 2;
-                for (int kolom = 0; kolom < bordgrootte; kolom++)
+                for (int c = 0; c < bordgrootte; c++)
                 {
-                    for (int rij = 0; rij < bordgrootte; rij++)
-                    {
-                        if (Legalezet(kolom, rij, speler)) return true;
-                    }
-
+                    if (bord[r, c] == 2) rood++;  // tel alle 2’s
                 }
-                return false;
             }
-    public bool afgelopen()
-            { if (isereenblauwezet() || isereenrodezet()) return false;
+            return rood;
+        }
+
+        public bool isereenblauwezet()
+        {
+            int speler = 1; // check voor blauw
+            for (int kolom = 0; kolom < bordgrootte; kolom++)
+            {
+                for (int rij = 0; rij < bordgrootte; rij++)
+                {
+                    if (Legalezet(kolom, rij, speler)) return true; // zodra 1 legaal: true
+                }
+            }
+            return false; // nergens legaal
+        }
+
+        public bool isereenrodezet()
+        {
+            int speler = 2; // check voor rood
+            for (int kolom = 0; kolom < bordgrootte; kolom++)
+            {
+                for (int rij = 0; rij < bordgrootte; rij++)
+                {
+                    if (Legalezet(kolom, rij, speler)) return true;
+                }
+            }
+            return false;
+        }
+
+        public bool afgelopen()
+        {
+            // afgelopen als geen van beide spelers een zet heeft
+            if (isereenblauwezet() || isereenrodezet()) return false;
             else return true;
-            }
-            /*public int WieIsAanZet()
-            {
-                return speler; // 1 = blauw, 2 = rood
-            } */
-            public void teken(object sender, PaintEventArgs pea)
-            {
-                Graphics g = pea.Graphics;
+        }
 
-                for (int row = 0; row < bordgrootte; row++)
+        public void teken(object sender, PaintEventArgs pea)
+        {
+            Graphics g = pea.Graphics;
+
+            for (int row = 0; row < bordgrootte; row++)
+            {
+                for (int col = 0; col < bordgrootte; col++)
                 {
-                    for (int col = 0; col < bordgrootte; col++)
+                    int x = boardX + col * cellSize; // pixel x van vakje
+                    int y = boardY + row * cellSize; // pixel y van vakje
+
+                    g.DrawRectangle(Pens.Black, x, y, cellSize, cellSize); // teken vakje
+
+                    if (bord[row, col] != 0) // als er een steen ligt
                     {
-                        int x = boardX + col * cellSize;
-                        int y = boardY + row * cellSize;
+                        int margin = 6; // maakt steen kleiner dan vakje
 
-                        g.DrawRectangle(Pens.Black, x, y, cellSize, cellSize);
+                        Rectangle rect = new Rectangle(
+                            x + margin,
+                            y + margin,
+                            cellSize - 2 * margin,
+                            cellSize - 2 * margin
+                        );
 
-                        if (bord[row, col] != 0)
-                        {
-                            int margin = 6;// groote cel gedeeld 10
+                        if (bord[row, col] == 2)
+                            g.FillEllipse(Brushes.Red, rect);  // teken rode steen
 
-                            Rectangle rect = new Rectangle(
-                                x + margin,
-                                y + margin,
-                                cellSize - 2 * margin,
-                                cellSize - 2 * margin
-                            );
-
-                            if (bord[row, col] == 2)
-                                g.FillEllipse(Brushes.Red, rect);
-
-                            if (bord[row, col] == 1)
-                                g.FillEllipse(Brushes.Blue, rect);
-                        }
+                        if (bord[row, col] == 1)
+                            g.FillEllipse(Brushes.Blue, rect); // teken blauwe steen
                     }
                 }
             }
-
         }
     }
+}
